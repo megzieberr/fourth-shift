@@ -89,6 +89,18 @@ body {
   margin-bottom: 6px;
 }
 #login-form input:focus-visible { outline: 3px solid var(--orange); outline-offset: 1px; border-color: var(--orange); }
+.pw-wrap { position: relative; }
+.pw-wrap input { width: 100%; padding-right: 46px; }
+#pw-toggle {
+  position: absolute; right: 4px; top: 50%; transform: translateY(-50%);
+  margin-top: -3px;               /* input has margin-bottom: 6px */
+  border: none; background: none; cursor: pointer;
+  color: var(--ink-soft);
+  padding: 8px; border-radius: 8px;
+  display: grid; place-items: center;
+}
+#pw-toggle:hover { color: var(--ink); }
+#pw-toggle:focus-visible { outline: 3px solid var(--orange); outline-offset: 1px; }
 
 .btn-primary {
   font-family: "Big Shoulders Display", sans-serif;

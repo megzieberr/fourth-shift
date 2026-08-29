@@ -57,6 +57,16 @@ function wireLogin() {
     await backend.logout();
     location.reload();
   });
+  $("#pw-toggle").addEventListener("click", () => {
+    const input = $("#login-password");
+    const show = input.type === "password";
+    input.type = show ? "text" : "password";
+    $("#pw-slash").setAttribute("visibility", show ? "visible" : "hidden");
+    const btn = $("#pw-toggle");
+    btn.setAttribute("aria-label", show ? "Hide password" : "Show password");
+    btn.setAttribute("aria-pressed", String(show));
+    input.focus();
+  });
 }
 
 function showLoginError(msg) {
