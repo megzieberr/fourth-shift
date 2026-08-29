@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Fourth Shift — ALDE122 A2 crew board</title>
+  <meta name="description" content="Shared checklist for the ALDE122 Assessment 2 group essay.">
+  <meta name="theme-color" content="#E05A1F">
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="icons/icon-192.png">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@700;900&family=IBM+Plex+Mono:wght@400;600&family=Work+Sans:ital,wght@0,400;0,500;0,700;1,400&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <!-- ══════════ Clock-in (login) ══════════ -->
+  <section id="view-login" class="view">
+    <div class="clockin-card">
+      <div class="nameplate">
+        <span class="nameplate-rivet" aria-hidden="true"></span>
+        <h1>Fourth Shift</h1>
+        <span class="nameplate-rivet" aria-hidden="true"></span>
+      </div>
+      <p class="clockin-sub">ALDE122 · Assessment 2 · group essay board</p>
+
+      <form id="login-form" autocomplete="on">
+        <label for="login-username">Username</label>
+        <input id="login-username" name="username" type="text" autocapitalize="none"
+               autocomplete="username" required>
+        <label for="login-password">Password</label>
+        <input id="login-password" name="password" type="password"
+               autocomplete="current-password" required>
+        <p id="login-error" class="form-error" role="alert" hidden></p>
+        <button type="submit" id="login-btn" class="btn-primary">Clock in</button>
+      </form>
+      <p id="local-hint" class="local-hint" hidden>
+        Demo mode — try <strong>megan</strong> / <strong>shift</strong>
+        (or anna, ben, carla).
+      </p>
+    </div>
+  </section>
+
+  <!-- ══════════ The board ══════════ -->
+  <section id="view-board" class="view" hidden>
+    <header class="board-header">
+      <div class="nameplate nameplate-small">
+        <span class="nameplate-rivet" aria-hidden="true"></span>
+        <h1>Fourth Shift</h1>
+        <span class="nameplate-rivet" aria-hidden="true"></span>
+      </div>
+      <p class="board-sub">ALDE122 · Assessment 2</p>
+      <p class="countdown" id="countdown"></p>
+      <div class="crew-strip" id="crew-strip" aria-label="Crew"></div>
+      <button id="logout-btn" class="btn-ghost" type="button">Clock out</button>
+    </header>
+
+    <main>
+      <div id="stations" class="stations" aria-live="polite"></div>
+
+      <section class="punch-log-section" aria-label="The punch log">
+        <h2 class="station-heading"><span class="station-no">⏱</span> The punch log</h2>
+        <ol id="punch-log" class="punch-log"></ol>
+        <p id="punch-log-empty" class="empty-note" hidden>No punches yet. First tick starts the record.</p>
+      </section>
+    </main>
+
+    <footer class="board-footer">
+      <p>Due Sunday 20 Sep, 23:55 on eFundi · every punch is on the record</p>
+    </footer>
+  </section>
+
+  <!-- Card add/edit form template -->
+  <template id="tpl-task-form">
+    <form class="task-form">
+      <label>Title
+        <input name="title" type="text" required maxlength="140" placeholder="What needs doing?">
+      </label>
+      <label>Note <span class="opt">(optional)</span>
+        <input name="note" type="text" maxlength="300" placeholder="Details, page numbers…">
+      </label>
+      <label>Link <span class="opt">(optional)</span>
+        <input name="link" type="url" maxlength="400" placeholder="https:// (Google Doc, eFundi…)">
+      </label>
+      <label>Assigned to
+        <select name="assignee"><option value="">Everyone</option></select>
+      </label>
+      <div class="task-form-row">
+        <button type="submit" class="btn-primary btn-small">Save card</button>
+        <button type="button" class="btn-ghost btn-small" data-act="cancel">Cancel</button>
+      </div>
+    </form>
+  </template>
+
+  <div id="toasts" class="toasts" aria-live="assertive"></div>
+
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>

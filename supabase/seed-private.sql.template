@@ -1,0 +1,39 @@
+-- ════════════════════════════════════════════════════════════════════
+-- Fourth Shift — private seed TEMPLATE.
+-- Copy to seed-private.sql, fill in the real names, run AFTER schema.sql
+-- and AFTER creating the four auth users in the dashboard.
+-- seed-private.sql is gitignored — real names never enter the public repo.
+--
+-- Creating the users (dashboard, once):
+--   Authentication → Users → Add user → "Create new user"
+--   Email:    <username>@fourth-shift.app   (e.g. megan@fourth-shift.app)
+--   Password: pick one per person (share it over WhatsApp)
+--   Auto-confirm: ON  (or turn Confirm email OFF under Auth → Providers → Email)
+-- ════════════════════════════════════════════════════════════════════
+
+-- Megan (admin — can delete cards)
+insert into public.members (id, username, display_name, ink, is_admin)
+select id, 'megan', 'Megan', '#C93F2A', true
+from auth.users where email = 'megan@fourth-shift.app'
+on conflict (id) do update set display_name = excluded.display_name, ink = excluded.ink;
+
+-- Member 2 — replace username + display name (first name or initials only)
+insert into public.members (id, username, display_name, ink, is_admin)
+select id, 'USERNAME2', 'FIRSTNAME2', '#2E6C9E', false
+from auth.users where email = 'USERNAME2@fourth-shift.app'
+on conflict (id) do update set display_name = excluded.display_name, ink = excluded.ink;
+
+-- Member 3
+insert into public.members (id, username, display_name, ink, is_admin)
+select id, 'USERNAME3', 'FIRSTNAME3', '#4E7A3C', false
+from auth.users where email = 'USERNAME3@fourth-shift.app'
+on conflict (id) do update set display_name = excluded.display_name, ink = excluded.ink;
+
+-- Member 4
+insert into public.members (id, username, display_name, ink, is_admin)
+select id, 'USERNAME4', 'FIRSTNAME4', '#7A4E8F', false
+from auth.users where email = 'USERNAME4@fourth-shift.app'
+on conflict (id) do update set display_name = excluded.display_name, ink = excluded.ink;
+
+-- Check: should list all four with the right inks, Megan admin.
+select username, display_name, ink, is_admin from public.members order by username;
