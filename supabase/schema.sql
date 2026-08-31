@@ -29,6 +29,15 @@ create table if not exists public.tasks (
   created_at timestamptz not null default now()
 );
 
+-- One stamp per member on "Everyone" cards (tasks with no assignee).
+-- Assigned cards keep the single done_by stamp on tasks.
+create table if not exists public.task_punches (
+  task_id   bigint not null references public.tasks(id) on delete cascade,
+  member_id uuid   not null references public.members(id) on delete cascade,
+  at        timestamptz not null default now(),
+  primary key (task_id, member_id)
+);
+
 create table if not exists public.punch_log (
   id         bigint generated always as identity primary key,
   member_id  uuid references public.members(id) on delete set null,
@@ -38,9 +47,10 @@ create table if not exists public.punch_log (
 );
 
 -- ── RLS: reads for crew members only, NO direct write policies ──────
-alter table public.members   enable row level security;
-alter table public.tasks     enable row level security;
-alter table public.punch_log enable row level security;
+alter table public.members      enable row level security;
+alter table public.tasks        enable row level security;
+alter table public.task_punches enable row level security;
+alter table public.punch_log    enable row level security;
 
 -- Membership check lives in a SECURITY DEFINER helper: a policy on members that
 -- selects from members recurses into itself (42P17) — found live 2026-08-29.
@@ -48,17 +58,19 @@ create or replace function public.is_crew() returns boolean
 language sql stable security definer set search_path = public as
 $$ select exists (select 1 from members where id = auth.uid()) $$;
 
-drop policy if exists members_read   on public.members;
-drop policy if exists tasks_read     on public.tasks;
-drop policy if exists punch_log_read on public.punch_log;
+drop policy if exists members_read      on public.members;
+drop policy if exists tasks_read        on public.tasks;
+drop policy if exists task_punches_read on public.task_punches;
+drop policy if exists punch_log_read    on public.punch_log;
 
-create policy members_read   on public.members   for select to authenticated using (public.is_crew());
-create policy tasks_read     on public.tasks     for select to authenticated using (public.is_crew());
-create policy punch_log_read on public.punch_log for select to authenticated using (public.is_crew());
+create policy members_read      on public.members      for select to authenticated using (public.is_crew());
+create policy tasks_read        on public.tasks        for select to authenticated using (public.is_crew());
+create policy task_punches_read on public.task_punches for select to authenticated using (public.is_crew());
+create policy punch_log_read    on public.punch_log    for select to authenticated using (public.is_crew());
 
 -- Belt and braces: anon gets nothing, and no client ever writes tables directly.
-revoke all on public.members, public.tasks, public.punch_log from anon;
-revoke insert, update, delete on public.members, public.tasks, public.punch_log
+revoke all on public.members, public.tasks, public.task_punches, public.punch_log from anon;
+revoke insert, update, delete on public.members, public.tasks, public.task_punches, public.punch_log
   from authenticated;
 
 -- ── Helpers ─────────────────────────────────────────────────────────
@@ -73,28 +85,40 @@ begin
 end $$;
 
 -- ── RPCs (the ONLY write path) ──────────────────────────────────────
+-- "Everyone" cards (assignee null): one stamp per member, you only toggle YOURS.
+-- Assigned cards: single shared stamp on tasks.done_by, as before.
 create or replace function public.punch_task(p_task_id bigint) returns void
 language plpgsql security definer set search_path = public as $$
-declare uid uuid := assert_crew(); t_title text;
+declare uid uuid := assert_crew(); t record;
 begin
-  update tasks set done_by = uid, done_at = now()
-    where id = p_task_id and done_by is null
-    returning title into t_title;
-  if t_title is null then
-    raise exception 'Card not found or already punched.';
+  select id, title, assignee, done_by into t from tasks where id = p_task_id;
+  if not found then raise exception 'Card not found.'; end if;
+  if t.assignee is null then
+    insert into task_punches (task_id, member_id) values (t.id, uid)
+      on conflict do nothing;
+    if not found then return; end if;  -- already stamped by you — nothing to do
+  else
+    update tasks set done_by = uid, done_at = now()
+      where id = t.id and done_by is null;
+    if not found then raise exception 'Card already punched.'; end if;
   end if;
-  insert into punch_log (member_id, action, task_title) values (uid, 'punched', t_title);
+  insert into punch_log (member_id, action, task_title) values (uid, 'punched', t.title);
 end $$;
 
 create or replace function public.unpunch_task(p_task_id bigint) returns void
 language plpgsql security definer set search_path = public as $$
-declare uid uuid := assert_crew(); t_title text;
+declare uid uuid := assert_crew(); t record;
 begin
-  update tasks set done_by = null, done_at = null
-    where id = p_task_id and done_by is not null
-    returning title into t_title;
-  if t_title is null then return; end if;
-  insert into punch_log (member_id, action, task_title) values (uid, 'unpunched', t_title);
+  select id, title, assignee, done_by into t from tasks where id = p_task_id;
+  if not found then return; end if;
+  if t.assignee is null then
+    delete from task_punches where task_id = t.id and member_id = uid;
+    if not found then return; end if;  -- you had no stamp here; others' stamps untouchable
+  else
+    if t.done_by is null then return; end if;
+    update tasks set done_by = null, done_at = null where id = t.id;
+  end if;
+  insert into punch_log (member_id, action, task_title) values (uid, 'unpunched', t.title);
 end $$;
 
 create or replace function public.add_task(
@@ -164,6 +188,18 @@ exception when duplicate_object then null; end $$;
 do $$ begin
   alter publication supabase_realtime add table public.punch_log;
 exception when duplicate_object then null; end $$;
+do $$ begin
+  alter publication supabase_realtime add table public.task_punches;
+exception when duplicate_object then null; end $$;
+
+-- ── One-off backfill: everyone-cards stamped under the old single-stamp
+--    model move their stamp into task_punches (idempotent, no-op after) ──
+insert into public.task_punches (task_id, member_id, at)
+select id, done_by, coalesce(done_at, now()) from public.tasks
+where assignee is null and done_by is not null
+on conflict do nothing;
+update public.tasks set done_by = null, done_at = null
+where assignee is null and done_by is not null;
 
 -- ── Seed the job-card skeleton (only when tasks is empty) ───────────
 -- (Mirror of js/skeleton-tasks.js — edit cards in the app afterwards.)

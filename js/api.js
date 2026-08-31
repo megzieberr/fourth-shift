@@ -18,6 +18,7 @@ export async function init() {
   supabase
     .channel("board")
     .on("postgres_changes", { event: "*", schema: "public", table: "tasks" }, () => notify())
+    .on("postgres_changes", { event: "*", schema: "public", table: "task_punches" }, () => notify())
     .on("postgres_changes", { event: "*", schema: "public", table: "punch_log" }, () => notify())
     .subscribe();
 }
@@ -65,6 +66,12 @@ export async function getTasks() {
     .from("tasks").select("*")
     .order("station").order("position");
   if (error) throw new Error("Couldn't load the job cards.");
+  return data;
+}
+
+export async function getPunches() {
+  const { data, error } = await supabase.from("task_punches").select("*");
+  if (error) throw new Error("Couldn't load the crew stamps.");
   return data;
 }
 

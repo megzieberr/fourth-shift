@@ -271,14 +271,33 @@ button:focus-visible, .punch-btn:focus-visible { outline: 3px solid var(--orange
   opacity: .92;
   mix-blend-mode: multiply;
 }
+/* Everyone-cards: one ink slot per crew member */
+.crew-stamps { grid-column: 1 / -1; display: flex; gap: 8px; align-items: center; }
+.crew-stamp {
+  width: 26px; height: 26px; border-radius: 50%;
+  border: 2px dashed var(--line);
+  display: grid; place-items: center;
+  font-family: "IBM Plex Mono", monospace;
+  font-size: .68rem; font-weight: 600;
+  color: var(--ink-soft);
+}
+.crew-stamp.punched { color: #FFFDF6; border-style: solid; transform: rotate(-6deg); }
+.punch-btn.mine { border-style: dashed; }
+
 @keyframes stamp-slam {
   0%   { transform: rotate(-9deg) scale(1.9); opacity: 0; }
   60%  { transform: rotate(-2.5deg) scale(.96); opacity: 1; }
   100% { transform: rotate(-2.5deg) scale(1); opacity: .92; }
 }
+@keyframes crew-stamp-slam {
+  0%   { transform: rotate(-30deg) scale(2); opacity: 0; }
+  60%  { transform: rotate(-6deg) scale(.92); opacity: 1; }
+  100% { transform: rotate(-6deg) scale(1); opacity: 1; }
+}
 .stamp.fresh { animation: stamp-slam .28s cubic-bezier(.2, 1.4, .4, 1) both; }
+.crew-stamp.fresh { animation: crew-stamp-slam .28s cubic-bezier(.2, 1.4, .4, 1) both; }
 @media (prefers-reduced-motion: reduce) {
-  .stamp.fresh { animation: none; }
+  .stamp.fresh, .crew-stamp.fresh { animation: none; }
   .btn-primary:active { transform: none; }
 }
 

@@ -1,5 +1,5 @@
 // Fourth Shift service worker — bump CACHE on every deploy.
-const CACHE = "fourth-shift-v2";
+const CACHE = "fourth-shift-v3";
 const SHELL = [
   "./", "index.html", "css/style.css",
   "js/app.js", "js/api.js", "js/local-backend.js", "js/config.js", "js/skeleton-tasks.js",

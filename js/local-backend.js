@@ -26,11 +26,13 @@ function load() {
         title: t.title, note: t.note || "", link: t.link || "",
         assignee: null, done_by: null, done_at: null, created_by: null,
       })),
+      punches: [],
       log: [],
       nextId: SEED_TASKS.length + 1,
     };
     save();
   }
+  if (!Array.isArray(db.punches)) { db.punches = []; save(); }
 }
 function save() { localStorage.setItem(KEY, JSON.stringify(db)); }
 function notify() { listeners.forEach((cb) => cb()); }
@@ -69,15 +71,23 @@ export async function getTasks() {
   return [...db.tasks].sort((a, b) => a.station - b.station || a.position - b.position);
 }
 
+export async function getPunches() { return db.punches; }
+
 export async function getLog() { return db.log; }
 
 export async function punchTask(id) {
   requireMe();
   const t = db.tasks.find((x) => x.id === id);
   if (!t) throw new Error("Card not found.");
-  if (t.done_by) return; // already punched — no double stamp
-  t.done_by = me.id;
-  t.done_at = new Date().toISOString();
+  if (!t.assignee) {
+    // Everyone card: one stamp per member, yours only
+    if (db.punches.some((p) => p.task_id === id && p.member_id === me.id)) return;
+    db.punches.push({ task_id: id, member_id: me.id, at: new Date().toISOString() });
+  } else {
+    if (t.done_by) return; // already punched — no double stamp
+    t.done_by = me.id;
+    t.done_at = new Date().toISOString();
+  }
   logLine("punched", t.title);
   save(); notify();
 }
@@ -85,9 +95,16 @@ export async function punchTask(id) {
 export async function unpunchTask(id) {
   requireMe();
   const t = db.tasks.find((x) => x.id === id);
-  if (!t || !t.done_by) return;
-  t.done_by = null;
-  t.done_at = null;
+  if (!t) return;
+  if (!t.assignee) {
+    const before = db.punches.length;
+    db.punches = db.punches.filter((p) => !(p.task_id === id && p.member_id === me.id));
+    if (db.punches.length === before) return; // no stamp of yours here
+  } else {
+    if (!t.done_by) return;
+    t.done_by = null;
+    t.done_at = null;
+  }
   logLine("unpunched", t.title);
   save(); notify();
 }
@@ -121,6 +138,7 @@ export async function deleteTask(id) {
   if (i === -1) return;
   logLine("deleted", db.tasks[i].title);
   db.tasks.splice(i, 1);
+  db.punches = db.punches.filter((p) => p.task_id !== id);
   save(); notify();
 }
 

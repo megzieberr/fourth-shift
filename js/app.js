@@ -17,6 +17,7 @@ const el = (tag, cls, text) => {
 let me = null;
 let members = [];
 let tasks = [];
+let punches = [];   // per-member stamps on "Everyone" cards
 let log = [];
 let openFormStation = null;   // station no with an open add-form
 let editingTaskId = null;
@@ -83,8 +84,8 @@ async function enterBoard() {
 }
 
 async function refresh() {
-  [members, tasks, log] = await Promise.all([
-    backend.getMembers(), backend.getTasks(), backend.getLog(),
+  [members, tasks, punches, log] = await Promise.all([
+    backend.getMembers(), backend.getTasks(), backend.getPunches(), backend.getLog(),
   ]);
   renderCrew();
   renderStations();
@@ -105,11 +106,21 @@ function renderCountdown() {
 function memberById(id) { return members.find((m) => m.id === id); }
 function initialOf(m) { return (m?.display_name || "?").slice(0, 1).toUpperCase(); }
 
+/* "Everyone" card = no assignee: one stamp per member. Assigned card: single stamp. */
+function isEveryoneCard(t) { return !t.assignee; }
+function punchesFor(taskId) { return punches.filter((p) => p.task_id === taskId); }
+function isDone(t) {
+  return isEveryoneCard(t)
+    ? members.length > 0 && punchesFor(t.id).length >= members.length
+    : !!t.done_by;
+}
+
 function renderCrew() {
   const strip = $("#crew-strip");
   strip.textContent = "";
   for (const m of members) {
-    const punched = tasks.filter((t) => t.done_by === m.id).length;
+    const punched = tasks.filter((t) => t.done_by === m.id).length
+                  + punches.filter((p) => p.member_id === m.id).length;
     const chip = el("span", "crew-chip");
     const av = el("span", "crew-avatar", initialOf(m));
     av.style.background = m.ink;
@@ -128,7 +139,7 @@ function renderStations() {
     h.append(el("span", "station-no", String(st.no)), el("span", "", st.title),
              el("span", "station-window", st.window));
     const stTasks = tasks.filter((t) => t.station === st.no);
-    if (stTasks.length && stTasks.every((t) => t.done_by)) {
+    if (stTasks.length && stTasks.every(isDone)) {
       h.append(el("span", "station-clear", "STATION CLEAR"));
     }
     section.append(h);
@@ -153,16 +164,22 @@ function renderStations() {
 function taskCard(t) {
   if (editingTaskId === t.id) return taskForm(t.station, t);
 
-  const card = el("article", "task-card" + (t.done_by ? " done" : ""));
+  const everyone = isEveryoneCard(t);
+  const done = isDone(t);
+  const mine = everyone && punchesFor(t.id).some((p) => p.member_id === me.id);
+  const card = el("article", "task-card" + (done ? " done" : ""));
 
-  const btn = el("button", "punch-btn");
+  const btn = el("button", "punch-btn" + (mine ? " mine" : ""));
   btn.type = "button";
-  btn.setAttribute("aria-label", t.done_by ? `Un-punch: ${t.title}` : `Punch done: ${t.title}`);
+  const willUnpunch = everyone ? mine : !!t.done_by;
+  btn.setAttribute("aria-label", everyone
+    ? (mine ? `Remove your stamp: ${t.title}` : `Add your stamp: ${t.title}`)
+    : (t.done_by ? `Un-punch: ${t.title}` : `Punch done: ${t.title}`));
   btn.textContent = "•";
   btn.addEventListener("click", async () => {
     btn.disabled = true;                       // disable BEFORE the await
     try {
-      if (t.done_by) await backend.unpunchTask(t.id);
+      if (willUnpunch) await backend.unpunchTask(t.id);
       else { freshStampTaskId = t.id; await backend.punchTask(t.id); }
       await refresh();
     } catch (err) { toast(err.message, true); btn.disabled = false; }
@@ -192,7 +209,31 @@ function taskCard(t) {
 
   card.append(btn, body, kebab);
 
-  if (t.done_by) {
+  if (everyone) {
+    // one ink slot per crew member — your tap only ever touches your own
+    const row = el("div", "crew-stamps");
+    let lastAt = null;
+    for (const m of members) {
+      const p = punchesFor(t.id).find((x) => x.member_id === m.id);
+      const slot = el("span", "crew-stamp" + (p ? " punched" : ""), initialOf(m));
+      if (p) {
+        slot.style.background = m.ink;
+        slot.style.borderColor = m.ink;
+        slot.title = `${m.display_name} · ${fmtLogTime(p.at)}`;
+        if (!lastAt || p.at > lastAt) lastAt = p.at;
+        if (freshStampTaskId === t.id && m.id === me.id) { slot.classList.add("fresh"); freshStampTaskId = null; }
+      } else {
+        slot.title = `${m.display_name} — not stamped yet`;
+      }
+      row.append(slot);
+    }
+    card.append(row);
+    if (done) {
+      const stamp = el("span", "stamp", `DONE · WHOLE CREW · ${lastAt ? fmtTime(lastAt) : ""}`);
+      stamp.style.color = "var(--ink)";
+      card.append(stamp);
+    }
+  } else if (t.done_by) {
     const by = memberById(t.done_by);
     const when = t.done_at ? fmtTime(t.done_at) : "";
     const stamp = el("span", "stamp", `DONE · ${(by?.display_name || "?").toUpperCase()} · ${when}`);
@@ -249,6 +290,7 @@ function closeForm() { openFormStation = null; editingTaskId = null; }
 const ACTION_TEXT = {
   punched: "punched", unpunched: "un-punched",
   added: "added", edited: "edited", deleted: "deleted",
+  restored: "restored",
 };
 function renderLog() {
   const listEl = $("#punch-log");
