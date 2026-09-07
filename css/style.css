@@ -163,6 +163,26 @@ button:focus-visible, .punch-btn:focus-visible { outline: 3px solid var(--orange
 }
 .crew-count { font-family: "IBM Plex Mono", monospace; font-size: .7rem; color: var(--ink-soft); }
 
+.filter-toggle {
+  display: inline-flex;
+  border: 1.5px solid var(--line);
+  border-radius: 999px;
+  overflow: hidden;
+  margin-bottom: 10px;
+}
+.filter-btn {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: .68rem; font-weight: 600; letter-spacing: .04em;
+  color: var(--ink-soft);
+  background: var(--card);
+  border: none;
+  padding: 6px 14px;
+  cursor: pointer;
+}
+.filter-btn + .filter-btn { border-left: 1.5px solid var(--line); }
+.filter-btn.active { background: var(--orange); color: #FFF8EC; }
+.filter-btn:focus-visible { outline: 3px solid var(--orange); outline-offset: -3px; }
+
 /* ── Stations (the conveyor) ───────────────────────── */
 .stations { display: grid; gap: 26px; }
 .station {
@@ -201,6 +221,20 @@ button:focus-visible, .punch-btn:focus-visible { outline: 3px solid var(--orange
   color: var(--ink-c); border: 1.5px solid var(--ink-c);
   border-radius: 4px; padding: 1px 6px;
   transform: rotate(-3deg);
+}
+.station-toggle {
+  all: unset;
+  display: flex; align-items: center; gap: 10px;
+  cursor: pointer;
+  flex: 1; min-width: 0;
+}
+.station-toggle:focus-visible { outline: 3px solid var(--orange); outline-offset: 2px; border-radius: 4px; }
+.station-chevron { flex: none; font-size: .8rem; color: var(--ink-soft); }
+.station-summary {
+  font-family: "IBM Plex Mono", monospace;
+  font-weight: 400; font-size: .68rem; letter-spacing: 0; text-transform: none;
+  color: var(--ink-soft);
+  margin-left: auto;
 }
 .station-tasks { display: grid; gap: 10px; }
 

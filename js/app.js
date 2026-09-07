@@ -22,6 +22,33 @@ let log = [];
 let openFormStation = null;   // station no with an open add-form
 let editingTaskId = null;
 let freshStampTaskId = null;  // which stamp gets the slam animation this render
+let filterMode = loadFilter();       // "mine" | "all"
+let collapsedState = loadCollapsed(); // { [station.no]: true|false } — explicit user overrides only
+
+/* ── filter + collapse persistence (localStorage can throw — always guarded) ── */
+function loadFilter() {
+  try { return localStorage.getItem("fs-filter") === "all" ? "all" : "mine"; }
+  catch { return "mine"; }
+}
+function saveFilter(mode) {
+  try { localStorage.setItem("fs-filter", mode); } catch {}
+}
+function loadCollapsed() {
+  try { return JSON.parse(localStorage.getItem("fs-collapsed")) || {}; }
+  catch { return {}; }
+}
+function saveCollapsed() {
+  try { localStorage.setItem("fs-collapsed", JSON.stringify(collapsedState)); } catch {}
+}
+function isCollapsed(stationNo, defaultVal) {
+  const v = collapsedState[stationNo];
+  return typeof v === "boolean" ? v : defaultVal;
+}
+function setCollapsed(stationNo, val) {
+  collapsedState[stationNo] = val;
+  saveCollapsed();
+}
+function isMine(t) { return t.assignee == null || t.assignee === me.id; }
 
 /* ── boot ─────────────────────────────────────────── */
 async function boot() {
@@ -35,8 +62,29 @@ async function boot() {
   }
   backend.onChange(() => refresh().catch(() => {}));
   wireLogin();
+  wireFilterToggle();
   me = await backend.restoreSession();
   if (me) await enterBoard();
+}
+
+function wireFilterToggle() {
+  updateFilterButtons();
+  $("#filter-toggle").addEventListener("click", (e) => {
+    const btn = e.target.closest(".filter-btn");
+    if (!btn || btn.dataset.filter === filterMode) return;
+    filterMode = btn.dataset.filter;
+    saveFilter(filterMode);
+    updateFilterButtons();
+    renderStations();
+  });
+}
+
+function updateFilterButtons() {
+  for (const btn of $("#filter-toggle").querySelectorAll(".filter-btn")) {
+    const active = btn.dataset.filter === filterMode;
+    btn.classList.toggle("active", active);
+    btn.setAttribute("aria-pressed", String(active));
+  }
 }
 
 function wireLogin() {
@@ -136,27 +184,43 @@ function renderStations() {
   for (const st of STATIONS) {
     const section = el("section", "station");
     const h = el("h2", "station-heading");
-    h.append(el("span", "station-no", String(st.no)), el("span", "", st.title),
-             el("span", "station-window", st.window));
     const stTasks = tasks.filter((t) => t.station === st.no);
-    if (stTasks.length && stTasks.every(isDone)) {
-      h.append(el("span", "station-clear", "STATION CLEAR"));
-    }
+    const doneCount = stTasks.filter(isDone).length;
+    const stationClear = stTasks.length > 0 && doneCount === stTasks.length;
+    const collapsed = isCollapsed(st.no, stationClear);
+
+    const toggle = el("button", "station-toggle");
+    toggle.type = "button";
+    toggle.setAttribute("aria-expanded", String(!collapsed));
+    toggle.append(el("span", "station-chevron", collapsed ? "▸" : "▾"),
+      el("span", "station-no", String(st.no)), el("span", "", st.title),
+      el("span", "station-window", st.window));
+    toggle.addEventListener("click", () => { setCollapsed(st.no, !collapsed); renderStations(); });
+    h.append(toggle);
+    if (stationClear) h.append(el("span", "station-clear", "STATION CLEAR"));
+    if (collapsed) h.append(el("span", "station-summary", `${stTasks.length} jobs · ${doneCount} done`));
     section.append(h);
 
-    const list = el("div", "station-tasks");
-    for (const t of stTasks) list.append(taskCard(t));
-    if (!stTasks.length) list.append(el("p", "empty-note", "No job cards at this station yet — add one."));
+    if (!collapsed) {
+      const list = el("div", "station-tasks");
+      const visible = filterMode === "mine" ? stTasks.filter(isMine) : stTasks;
+      for (const t of visible) list.append(taskCard(t));
+      if (!stTasks.length) {
+        list.append(el("p", "empty-note", "No job cards at this station yet — add one."));
+      } else if (!visible.length) {
+        list.append(el("p", "empty-note", "No jobs of yours at this station."));
+      }
 
-    if (editingTaskId === null && openFormStation === st.no) {
-      list.append(taskForm(st.no, null));
-    } else {
-      const add = el("button", "add-card-btn", "+ Add a job card");
-      add.type = "button";
-      add.addEventListener("click", () => { openFormStation = st.no; editingTaskId = null; renderStations(); });
-      list.append(add);
+      if (editingTaskId === null && openFormStation === st.no) {
+        list.append(taskForm(st.no, null));
+      } else {
+        const add = el("button", "add-card-btn", "+ Add a job card");
+        add.type = "button";
+        add.addEventListener("click", () => { openFormStation = st.no; editingTaskId = null; renderStations(); });
+        list.append(add);
+      }
+      section.append(list);
     }
-    section.append(list);
     wrap.append(section);
   }
 }
