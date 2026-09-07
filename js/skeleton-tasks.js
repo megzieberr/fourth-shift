@@ -7,7 +7,6 @@ export const SEED_TASKS = [
   { station: 1, title: "Watch for the tutor's email with the group list", note: "Names, phone numbers, emails of the other three." },
   { station: 1, title: "Create the group WhatsApp and get all four in", note: "Someone unreachable? Contact the tutor immediately — that's the official route." },
   { station: 1, title: "Everyone clocks in on this board once", note: "Proves the login works before it matters." },
-  { station: 1, title: "Ask the tutor: is the A2 mark shared or split?", note: "Overview video: 'your GROUP will get a mark out of 50' — sounds shared. Confirm with the tutor." },
   // ② Decode the brief
   { station: 2, title: "Everyone reads the full brief — same day it lands" },
   { station: 2, title: "List the four tasks, lengths and rubric on this card", note: "T1 reflection /11 · T2 intro /25 · T3 reflection /5 · T4 prompt /4 + reflection /5. Paragraphs are ±120 words; the intro 110–150." },
