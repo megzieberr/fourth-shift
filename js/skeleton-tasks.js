@@ -10,7 +10,6 @@ export const SEED_TASKS = [
   // ② Decode the brief
   { station: 2, title: "Everyone reads the full brief — same day it lands" },
   { station: 2, title: "List the four tasks, lengths and rubric on this card", note: "T1 reflection /11 · T2 intro /25 · T3 reflection /5 · T4 prompt /4 + reflection /5. Paragraphs are ±120 words; the intro 110–150." },
-  { station: 2, title: "Divide the work — name an owner per task", note: "Decided by the template: roles rotate per task. Each task's station lists who does which version." },
   { station: 2, title: "Set internal deadlines — group cut-off Friday 18 Sep, not the 20th" },
   // ③ Task 1 · Source check (11)
   { station: 3, title: "Everyone: find the Xu, David & Kim (2018) article — NWU Library → Google Scholar", note: "Match the exact title — Scholar's listing shows the wrong authors; the lecturer herself ended up finding the PDF via plain Google. Everyone downloads their own copy." },
