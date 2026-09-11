@@ -338,8 +338,16 @@ button:focus-visible, .punch-btn:focus-visible { outline: 3px solid var(--orange
 }
 .stamp.fresh { animation: stamp-slam .28s cubic-bezier(.2, 1.4, .4, 1) both; }
 .crew-stamp.fresh { animation: crew-stamp-slam .28s cubic-bezier(.2, 1.4, .4, 1) both; }
+@keyframes clear-stamp-slam {
+  0%   { transform: rotate(-14deg) scale(2.4); opacity: 0; }
+  60%  { transform: rotate(-2deg) scale(.94); opacity: 1; }
+  100% { transform: rotate(-3deg) scale(1); opacity: 1; }
+}
+.station-clear.fresh { animation: clear-stamp-slam .34s cubic-bezier(.2, 1.4, .4, 1) both; }
+/* station-clear confetti: drawn on a throwaway canvas over the board, never blocks taps */
+.confetti { position: fixed; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 45; }
 @media (prefers-reduced-motion: reduce) {
-  .stamp.fresh, .crew-stamp.fresh { animation: none; }
+  .stamp.fresh, .crew-stamp.fresh, .station-clear.fresh { animation: none; }
   .btn-primary:active { transform: none; }
 }
 

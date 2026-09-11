@@ -22,6 +22,8 @@ let log = [];
 let openFormStation = null;   // station no with an open add-form
 let editingTaskId = null;
 let freshStampTaskId = null;  // which stamp gets the slam animation this render
+let freshClears = [];         // station nos whose STATION CLEAR stamp slams in this render
+let tappedStation = null;     // station of your own punch in flight (a clear there scrolls into view)
 let filterMode = loadFilter();       // "mine" | "all"
 let collapsedState = loadCollapsed(); // { [station.no]: true|false } — explicit user overrides only
 
@@ -135,9 +137,13 @@ async function refresh() {
   [members, tasks, punches, log] = await Promise.all([
     backend.getMembers(), backend.getTasks(), backend.getPunches(), backend.getLog(),
   ]);
+  const newClears = takeNewClears();
+  freshClears = newClears;
   renderCrew();
   renderStations();
+  freshClears = [];
   renderLog();
+  if (newClears.length) celebrate(newClears);
 }
 
 /* ── header ───────────────────────────────────────── */
@@ -183,6 +189,7 @@ function renderStations() {
   wrap.textContent = "";
   for (const st of STATIONS) {
     const section = el("section", "station");
+    section.dataset.station = st.no;
     const h = el("h2", "station-heading");
     const stTasks = tasks.filter((t) => t.station === st.no);
     const doneCount = stTasks.filter(isDone).length;
@@ -195,7 +202,11 @@ function renderStations() {
     // Title gets its own line; date, stamp and job count wrap on a small line under it.
     const meta = el("span", "station-meta");
     meta.append(el("span", "station-window", st.window));
-    if (stationClear) meta.append(el("span", "station-clear", "STATION CLEAR"));
+    if (stationClear) {
+      const stamp = el("span", "station-clear", "STATION CLEAR");
+      if (freshClears.includes(st.no)) stamp.classList.add("fresh");
+      meta.append(stamp);
+    }
     if (collapsed) meta.append(el("span", "station-summary", `${stTasks.length} jobs · ${doneCount} done`));
     const text = el("span", "station-text");
     text.append(el("span", "station-title", st.title), meta);
@@ -258,9 +269,10 @@ function taskCard(t) {
     btn.disabled = true;                       // disable BEFORE the await
     try {
       if (willUnpunch) await backend.unpunchTask(t.id);
-      else { freshStampTaskId = t.id; await backend.punchTask(t.id); }
+      else { freshStampTaskId = t.id; tappedStation = t.station; await backend.punchTask(t.id); }
       await refresh();
     } catch (err) { toast(err.message, true); btn.disabled = false; }
+    tappedStation = null;
   });
 
   const body = el("div");
@@ -394,6 +406,118 @@ function fmtTime(iso) {
 function fmtLogTime(iso) {
   const d = new Date(iso);
   return d.toLocaleDateString("en-ZA", { day: "numeric", month: "short" }) + " " + fmtTime(iso);
+}
+
+/* ── station clear: confetti ──────────────────────── */
+// Each phone remembers, per member, which stations it has already celebrated. The finisher
+// gets confetti on the tap; the rest of the crew gets it once, the next time they open the
+// board. A station that stops being clear (un-punch, new card) is forgotten, so clearing it
+// again celebrates again. The in-memory copy stops repeats when localStorage is blocked.
+let seenClears = null;   // { memberId, nos: Set }
+function seenClearKey() { return `fs-clear-seen-${me.id}`; }
+function takeNewClears() {
+  if (!me || !tasks.length || !members.length) return [];   // half-loaded board: change nothing
+  if (seenClears?.memberId !== me.id) {
+    let saved = [];
+    try { saved = JSON.parse(localStorage.getItem(seenClearKey())) || []; } catch {}
+    seenClears = { memberId: me.id, nos: new Set(Array.isArray(saved) ? saved : []) };
+  }
+  const clear = STATIONS.map((st) => st.no).filter((no) => {
+    const stTasks = tasks.filter((t) => t.station === no);
+    return stTasks.length > 0 && stTasks.every(isDone);
+  });
+  const fresh = clear.filter((no) => !seenClears.nos.has(no));
+  seenClears.nos = new Set(clear);
+  try { localStorage.setItem(seenClearKey(), JSON.stringify(clear)); } catch {}
+  return fresh;
+}
+
+function celebrate(nos) {
+  const first = STATIONS.find((st) => st.no === nos[0]);
+  toast(nos.length === 1
+    ? `Station ${first.no} clear: ${first.title}`
+    : `Stations ${nos.slice(0, -1).join(", ")} & ${nos.at(-1)} clear`);
+  // Your own clearing tap folds the station shut, which can leave its heading above the
+  // screen. Bring it back so you see the stamp land. Other people's clears never scroll you.
+  if (nos.includes(tappedStation)) {
+    const stamp = document.querySelector(`.station[data-station="${tappedStation}"] .station-clear`);
+    const r = stamp?.getBoundingClientRect();
+    if (r && (r.top < 0 || r.bottom > innerHeight)) stamp.closest(".station-heading").scrollIntoView({ block: "center" });
+  }
+  if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  const origins = nos.map((no) => {
+    const r = document.querySelector(`.station[data-station="${no}"] .station-clear`)?.getBoundingClientRect();
+    return r
+      ? { x: r.left + r.width / 2, y: Math.min(Math.max(r.top + r.height / 2, 80), innerHeight - 80) }
+      : { x: innerWidth / 2, y: innerHeight / 3 };
+  });
+  throwConfetti(origins);
+}
+
+function throwConfetti(origins) {
+  const canvas = el("canvas", "confetti");
+  canvas.setAttribute("aria-hidden", "true");
+  document.body.append(canvas);
+  const w = innerWidth, h = innerHeight;
+  const dpr = Math.min(devicePixelRatio || 1, 2);
+  canvas.width = Math.round(w * dpr);
+  canvas.height = Math.round(h * dpr);
+  const ctx = canvas.getContext("2d");
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+  // crew inks + orange, and every fifth bit a little manila job ticket with a pencil edge
+  const css = getComputedStyle(document.documentElement);
+  const inks = [...members.map((m) => m.ink), css.getPropertyValue("--orange").trim()];
+  const manila = css.getPropertyValue("--paper-deep").trim();
+  const edge = css.getPropertyValue("--ink-soft").trim();
+
+  const bits = [];
+  const perOrigin = Math.max(50, Math.round(160 / origins.length));
+  for (const o of origins) {
+    for (let i = 0; i < perOrigin; i++) {
+      const angle = -Math.PI / 2 + (Math.random() - 0.5) * 2;   // upward fan
+      const speed = 4 + Math.random() * 9;
+      const ticket = i % 5 === 0;
+      bits.push({
+        x: o.x, y: o.y,
+        vx: Math.cos(angle) * speed, vy: Math.sin(angle) * speed,
+        w: ticket ? 9 : 4 + Math.random() * 5, h: ticket ? 6 : 3 + Math.random() * 3,
+        rot: Math.random() * Math.PI * 2, spin: (Math.random() - 0.5) * 0.3,
+        flip: Math.random() * Math.PI * 2, flipSpeed: 0.08 + Math.random() * 0.12,
+        colour: ticket ? manila : inks[Math.floor(Math.random() * inks.length)], ticket,
+      });
+    }
+  }
+
+  const LIFE = 2200, FADE = 600;
+  let elapsed = 0, last = performance.now();
+  function frame(now) {
+    // capped step: a phone that was in the background still plays the whole burst on return
+    const dt = Math.max(0, Math.min(now - last, 34));
+    last = now;
+    elapsed += dt;
+    const k = dt / 16.7;
+    const drag = Math.pow(0.985, k);
+    ctx.clearRect(0, 0, w, h);
+    ctx.globalAlpha = elapsed > LIFE - FADE ? Math.max(0, (LIFE - elapsed) / FADE) : 1;
+    for (const b of bits) {
+      b.vx *= drag;
+      b.vy = b.vy * drag + 0.28 * k;
+      b.x += b.vx * k; b.y += b.vy * k;
+      b.rot += b.spin * k; b.flip += b.flipSpeed * k;
+      ctx.save();
+      ctx.translate(b.x, b.y);
+      ctx.rotate(b.rot);
+      ctx.scale(1, Math.cos(b.flip));   // flutter
+      ctx.fillStyle = b.colour;
+      ctx.fillRect(-b.w / 2, -b.h / 2, b.w, b.h);
+      if (b.ticket) { ctx.strokeStyle = edge; ctx.lineWidth = 1; ctx.strokeRect(-b.w / 2, -b.h / 2, b.w, b.h); }
+      ctx.restore();
+    }
+    if (elapsed < LIFE) requestAnimationFrame(frame);
+    else canvas.remove();
+  }
+  requestAnimationFrame(frame);
 }
 
 /* ── toasts ───────────────────────────────────────── */
