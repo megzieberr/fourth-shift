@@ -192,13 +192,17 @@ function renderStations() {
     const toggle = el("button", "station-toggle");
     toggle.type = "button";
     toggle.setAttribute("aria-expanded", String(!collapsed));
+    // Title gets its own line; date, stamp and job count wrap on a small line under it.
+    const meta = el("span", "station-meta");
+    meta.append(el("span", "station-window", st.window));
+    if (stationClear) meta.append(el("span", "station-clear", "STATION CLEAR"));
+    if (collapsed) meta.append(el("span", "station-summary", `${stTasks.length} jobs · ${doneCount} done`));
+    const text = el("span", "station-text");
+    text.append(el("span", "station-title", st.title), meta);
     toggle.append(el("span", "station-chevron", collapsed ? "▸" : "▾"),
-      el("span", "station-no", String(st.no)), el("span", "", st.title),
-      el("span", "station-window", st.window));
+      el("span", "station-no", String(st.no)), text);
     toggle.addEventListener("click", () => { setCollapsed(st.no, !collapsed); renderStations(); });
     h.append(toggle);
-    if (stationClear) h.append(el("span", "station-clear", "STATION CLEAR"));
-    if (collapsed) h.append(el("span", "station-summary", `${stTasks.length} jobs · ${doneCount} done`));
     section.append(h);
 
     if (!collapsed) {
@@ -223,6 +227,16 @@ function renderStations() {
     }
     wrap.append(section);
   }
+}
+
+// "cohesion/clarity/formality" is one long word to the browser, so it got cut mid-word.
+// A <wbr> after each slash lets the line wrap there instead (copied text stays clean).
+function withSlashBreaks(node, text) {
+  text.split("/").forEach((part, i) => {
+    if (i > 0) node.append("/", document.createElement("wbr"));
+    node.append(part);
+  });
+  return node;
 }
 
 function taskCard(t) {
@@ -250,7 +264,7 @@ function taskCard(t) {
   });
 
   const body = el("div");
-  body.append(el("p", "task-title", t.title));
+  body.append(withSlashBreaks(el("p", "task-title"), t.title));
   const meta = el("div", "task-meta");
   const assignee = t.assignee ? memberById(t.assignee) : null;
   const chip = el("span", "assignee-chip");
@@ -259,7 +273,7 @@ function taskCard(t) {
   chip.append(dot, el("span", "", assignee ? assignee.display_name : "Everyone"));
   meta.append(chip);
   body.append(meta);
-  if (t.note) body.append(el("p", "task-note", t.note));
+  if (t.note) body.append(withSlashBreaks(el("p", "task-note"), t.note));
   if (t.link) {
     const a = el("a", "task-link", t.link.replace(/^https?:\/\//, ""));
     a.href = t.link; a.target = "_blank"; a.rel = "noopener";

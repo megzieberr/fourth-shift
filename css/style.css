@@ -221,20 +221,28 @@ button:focus-visible, .punch-btn:focus-visible { outline: 3px solid var(--orange
   color: var(--ink-c); border: 1.5px solid var(--ink-c);
   border-radius: 4px; padding: 1px 6px;
   transform: rotate(-3deg);
+  white-space: nowrap;
 }
 .station-toggle {
   all: unset;
-  display: flex; align-items: center; gap: 10px;
+  display: flex; align-items: baseline; gap: 10px;
   cursor: pointer;
   flex: 1; min-width: 0;
 }
 .station-toggle:focus-visible { outline: 3px solid var(--orange); outline-offset: 2px; border-radius: 4px; }
 .station-chevron { flex: none; font-size: .8rem; color: var(--ink-soft); }
+.station-text { display: flex; flex-direction: column; min-width: 0; }
+.station-title { line-height: 1.1; overflow-wrap: break-word; }
+.station-meta {
+  display: flex; flex-wrap: wrap; align-items: center;
+  gap: 4px 10px; margin-top: 4px;
+}
+.station-meta .station-window { flex-basis: 100%; }  /* date always on its own row */
 .station-summary {
   font-family: "IBM Plex Mono", monospace;
   font-weight: 400; font-size: .68rem; letter-spacing: 0; text-transform: none;
   color: var(--ink-soft);
-  margin-left: auto;
+  white-space: nowrap;
 }
 .station-tasks { display: grid; gap: 10px; }
 
