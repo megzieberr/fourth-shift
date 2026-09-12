@@ -15,7 +15,6 @@ export const STATIONS = [
   { no: 2, title: "Decode the brief",         window: "brief landed 7 Sep" },
   { no: 3, title: "Task 1 · Source check",    window: "no AI · due Sun 13 Sep" },
   { no: 4, title: "Task 2 · The introduction", window: "no AI · due Sun 13 Sep" },
-  { no: 5, title: "Task 3 · AI feedback",     window: "limited AI · by Sun 20 Sep" },
-  { no: 6, title: "Task 4 · Prompt + paragraph", window: "limited AI · by Sun 20 Sep" },
+  { no: 5, title: "Tasks 3 + 4 · The AI week", window: "limited AI · day by day, everything by Sun 20 Sep" },
   { no: 7, title: "Wrap",                     window: "everything due Sun 20 Sep 23:55" },
 ];
