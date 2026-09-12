@@ -27,13 +27,13 @@ export const SEED_TASKS = [
   { station: 4, title: "Word wizard: v3 — vocabulary, spelling, grammar" },
   { station: 4, title: "Rubric guardian: v4 — final version (this one is marked)", note: "5 marks each: background · problem · thesis · preview · language. Word count 110–150, one paragraph, no line breaks. Addendum C checklist, workbook p.269." },
   // ⑤ Task 3 · AI feedback (5)
-  { station: 5, title: "Everyone: run BOTH given prompts on the finished intro (individually — never submitted)", note: "By Sun 13 Sep · Any AI tool. Prompt 1 = cohesion/clarity/formality; Prompt 2 = background/problem/thesis/preview. Keep both outputs — the reflection must quote specifics." },
+  { station: 5, title: "T3 · Everyone: run BOTH given prompts on the finished intro (individually — never submitted)", note: "By Sun 13 Sep · Any AI tool. Prompt 1 = cohesion/clarity/formality; Prompt 2 = background/problem/thesis/preview. Keep both outputs — the reflection must quote specifics." },
   { station: 5, title: "Typewriter: v1 of the reflection — 120 words", note: "By Mon 14 Sep · Name the preferred prompt, refer to specific feedback from BOTH, connect the choice to what a good academic introduction contains." },
   { station: 5, title: "Flow master: v2 — flow, linking words, hedging" },
   { station: 5, title: "Word wizard: v3 — vocabulary, spelling, grammar" },
   { station: 5, title: "Rubric guardian: v4 — final version (this one is marked)", note: "Rubric: prompt choice + engagement with feedback 3 · alignment with intro elements 2." },
   // ⑥ Task 4 · Prompt + paragraph (9)
-  { station: 5, title: "Everyone: feed the essay + final intro to an AI, generate the alternative Xu et al. paragraph", note: "Use the group's developing prompt. Check that every source the AI cites actually EXISTS — the lecturer asks for this specifically." },
+  { station: 5, title: "T4 · Everyone: feed the essay + final intro to an AI, generate the alternative Xu et al. paragraph", note: "Use the group's developing prompt. Check that every source the AI cites actually EXISTS — the lecturer asks for this specifically." },
   { station: 5, title: "Everyone: fill the 4.2 comparison table (individually — never submitted)", note: "Original vs AI paragraph: focus · sources · clarity of argument · register/style · relevance to the essay aim. Feeds the reflection." },
   { station: 5, title: "Typewriter: v1 of BOTH — the prompt and the 120-word reflection", note: "Prompt: instruct a body paragraph from the Xu et al. source with academic structure. The lecturer wants to SEE the prompt develop across versions. Reflection: ≥3 table aspects — weaknesses, improvements, what you'd adopt, limitations." },
   { station: 5, title: "Flow master: v2 of both" },

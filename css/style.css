@@ -440,3 +440,21 @@ button:focus-visible, .punch-btn:focus-visible { outline: 3px solid var(--orange
   opacity: .45;
 }
 .day-heading:first-child { margin-top: 4px; }
+
+/* T3 / T4 task tags — which task a card in the merged AI-week lane belongs to */
+:root { --t3: #8A6D2F; --t4: #33697A; }
+.task-tag {
+  display: inline-block;
+  font-family: "IBM Plex Mono", monospace;
+  font-size: .68rem; font-weight: 700;
+  letter-spacing: .06em;
+  padding: 1px 6px; margin-right: 7px;
+  border-radius: 4px;
+  transform: translateY(-1px);
+  color: #FFFDF7;
+}
+.task-tag.t3 { background: var(--t3); }
+.task-tag.t4 { background: var(--t4); }
+.task-card.task-t3 { border-right: 4px solid var(--t3); }
+.task-card.task-t4 { border-right: 4px solid var(--t4); }
+.task-card.done .task-tag { opacity: .55; }

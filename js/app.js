@@ -273,7 +273,9 @@ function taskCard(t) {
   const everyone = isEveryoneCard(t);
   const done = isDone(t);
   const mine = everyone && punchesFor(t.id).some((p) => p.member_id === me.id);
-  const card = el("article", "task-card" + (done ? " done" : ""));
+  // "T3 · " / "T4 · " title prefixes render as a coloured tag + card edge in merged lanes.
+  const tag = /^T([34]) · /.exec(t.title);
+  const card = el("article", "task-card" + (done ? " done" : "") + (tag ? ` task-t${tag[1]}` : ""));
 
   const btn = el("button", "punch-btn" + (mine ? " mine" : ""));
   btn.type = "button";
@@ -293,7 +295,14 @@ function taskCard(t) {
   });
 
   const body = el("div");
-  body.append(withSlashBreaks(el("p", "task-title"), t.title));
+  const titleEl = el("p", "task-title");
+  if (tag) {
+    titleEl.append(el("span", `task-tag t${tag[1]}`, `T${tag[1]}`));
+    withSlashBreaks(titleEl, t.title.slice(tag[0].length));
+  } else {
+    withSlashBreaks(titleEl, t.title);
+  }
+  body.append(titleEl);
   const meta = el("div", "task-meta");
   const assignee = t.assignee ? memberById(t.assignee) : null;
   const chip = el("span", "assignee-chip");
