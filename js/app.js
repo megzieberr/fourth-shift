@@ -219,7 +219,15 @@ function renderStations() {
     if (!collapsed) {
       const list = el("div", "station-tasks");
       const visible = filterMode === "mine" ? stTasks.filter(isMine) : stTasks;
-      for (const t of visible) list.append(taskCard(t));
+      let currentDay = null;
+      for (const t of visible) {
+        const day = taskDay(t);
+        if (day && day !== currentDay) {
+          list.append(el("h3", "day-heading", day));
+          currentDay = day;
+        }
+        list.append(taskCard(t));
+      }
       if (!stTasks.length) {
         list.append(el("p", "empty-note", "No job cards at this station yet — add one."));
       } else if (!visible.length) {
@@ -238,6 +246,15 @@ function renderStations() {
     }
     wrap.append(section);
   }
+}
+
+// "By Sun 13 Sep · …" at the start of a note becomes a SUNDAY 13 SEP divider when the
+// day changes between consecutive visible cards; undated cards stay under the current day.
+const DAY_NAMES = { Sun: "SUNDAY", Mon: "MONDAY", Tue: "TUESDAY", Wed: "WEDNESDAY",
+                    Thu: "THURSDAY", Fri: "FRIDAY", Sat: "SATURDAY" };
+function taskDay(t) {
+  const m = /^By (Sun|Mon|Tue|Wed|Thu|Fri|Sat) (\d{1,2}) ([A-Za-z]{3})/.exec(t.note || "");
+  return m ? `${DAY_NAMES[m[1]]} ${m[2]} ${m[3].toUpperCase()}` : null;
 }
 
 // "cohesion/clarity/formality" is one long word to the browser, so it got cut mid-word.
