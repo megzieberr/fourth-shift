@@ -1,5 +1,19 @@
 # Fourth Shift
 
+> **RETIRED 2026-10-01, kept as a skeleton.** ALDE122 A2 is done. Kept as a skeleton for future group projects; the users and data are not needed.
+
+- Website taken down (GitHub Pages turned off) and the GitHub repo archived: read-only,
+  code kept. To undo: repo Settings, Unarchive, then turn Pages back on.
+- Local folder moved to `Claude Code Projects\_archive\`.
+- Supabase "ALDE122 - Assignment 2" (`njamrkcwppzxeitnnbem`, fourth-shift account) paused itself
+  after the 20 Sep deadline, as planned.
+  Not deleted. Supabase only lets you restore a paused project for about 90 days after it
+  paused; after that it is gone, which is fine: the setup file below is the skeleton.
+- Skeleton: `supabase/schema.sql` (tables incl. `task_punches` + `punch_log`, all RPCs). The old crew's
+  real names are only in the gitignored `supabase/seed-private.sql`: write a fresh one for a new group.
+- Quickest look at the skeleton: `?local=1` demo mode, no backend needed.
+
+
 Shared checklist for the **ALDE122 Assessment 2** group essay (due Sun 20 Sep 2026, 23:55).
 Four crew members clock in, punch job cards done, and every punch records who and when.
 Full plan + design notes: `BUILD-PLAN.md`.
